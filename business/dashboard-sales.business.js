@@ -309,106 +309,84 @@ exports.getSalesData = async (data) => {
 						'November',
 						'December',
 					];
+					if (salesResult.length > 0) {
+						months.forEach((allMonth) => {
+							salesResult.forEach((element) => {
+								let month = new Date(element._id).getMonth();
 
-					// if (salesResult.length > 0) {
-					// 	months.forEach((allMonth) => {
-					// 		salesResult.forEach((element) => {
-					// 			let month = new Date(element._id).getMonth();
-					// 			if (allMonth == months[month]) {
-					// 				counter = 0;
-					// 			} else {
-					// 				counter++;
-
-					// 				if (counter == salesResult.length) {
-					// 					data = {
-					// 						location: locationName.name,
-					// 						valueKey: allMonth,
-					// 						amount: 0,
-					// 					};
-					// 					graphData.push(data);
-					// 					counter = 0;
-					// 				}
-					// 			}
-					// 		});
-					// 		counter = 0;
-					// 	});
-					// } else {
-					// 	months.forEach((allMonth) => {
-					// 		let data = {
-					// 			location: locationName.name,
-					// 			valueKey: allMonth,
-					// 			amount: 0,
-					// 		};
-					// 		graphData.push(data);
-					// 	});
-					// }
-					months.forEach((allMonth) => {
-						salesResult.forEach((element) => {
-							let month = new Date(element._id).getMonth();
-
-							if (allMonth == months[month]) {
-								if (
-									prev == month ||
-									typeof prev == 'undefined'
-								) {
-									for (let i = 0; i < 12; i++) {
-										if (
-											typeof prev == undefined ||
-											month == i
-										) {
-											salesTotal =
-												salesTotal +
-												element.totalAmount;
-											prev = month;
+								if (allMonth == months[month]) {
+									if (
+										prev == month ||
+										typeof prev == 'undefined'
+									) {
+										for (let i = 0; i < 12; i++) {
+											if (
+												typeof prev == undefined ||
+												month == i
+											) {
+												salesTotal =
+													salesTotal +
+													element.totalAmount;
+												prev = month;
+											}
 										}
-									}
-									count++;
-								} else if (prev < month) {
-									let data = {
-										location: locationName.name,
-										valueKey: months[month - 1],
-										amount: salesTotal,
-									};
-									graphData.push(data);
-									salesTotal = 0;
-									for (let i = 0; i < 12; i++) {
-										if (
-											typeof prev == 'undefined' ||
-											month == i
-										) {
-											salesTotal =
-												salesTotal +
-												element.totalAmount;
-											prev = month;
+										count++;
+									} else if (prev < month) {
+										let data = {
+											location: locationName.name,
+											valueKey: months[month - 1],
+											amount: salesTotal,
+										};
+										graphData.push(data);
+										salesTotal = 0;
+										for (let i = 0; i < 12; i++) {
+											if (
+												typeof prev == 'undefined' ||
+												month == i
+											) {
+												salesTotal =
+													salesTotal +
+													element.totalAmount;
+												prev = month;
+											}
 										}
+										count++;
 									}
-									count++;
-								}
-								if (count == salesResult.length) {
-									let data = {
-										location: locationName.name,
-										valueKey: allMonth,
-										amount: salesTotal,
-									};
+									if (count == salesResult.length) {
+										let data = {
+											location: locationName.name,
+											valueKey: allMonth,
+											amount: salesTotal,
+										};
 
-									graphData.push(data);
-								}
-								counter = 0;
-							} else {
-								counter++;
-								if (counter == salesResult.length) {
-									data = {
-										location: locationName.name,
-										valueKey: allMonth,
-										amount: 0,
-									};
-									graphData.push(data);
+										graphData.push(data);
+									}
 									counter = 0;
+								} else {
+									counter++;
+									if (counter == salesResult.length) {
+										let data = {
+											location: locationName.name,
+											valueKey: allMonth,
+											amount: 0,
+										};
+										graphData.push(data);
+										counter = 0;
+									}
 								}
-							}
+							});
+							counter = 0;
 						});
-						counter = 0;
-					});
+					} else {
+						for (let i = 0; i < months.length; i++) {
+							let data = {
+								location: locationName.name,
+								valueKey: months[i],
+								amount: 0,
+							};
+							graphData.push(data);
+						}
+					}
 				}
 
 				appointmentQuery[0].$match.location = mongoose.Types.ObjectId(
