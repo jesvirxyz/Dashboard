@@ -143,121 +143,6 @@ exports.getSalesData = async (data) => {
 						}
 					}
 				}
-				//Yearly view
-				if (data.query.year) {
-					console.log('Yearly is selected');
-
-					salesQuery = [
-						{
-							$match: {
-								ownerId: mongoose.Types.ObjectId(ownerId),
-								location: mongoose.Types.ObjectId(location[i]),
-								updatedAt: {
-									$gte: new Date(startOfYear),
-									$lte: new Date(endOfYear),
-								},
-							},
-						},
-						{
-							$group: {
-								_id: {
-									$dateToString: {
-										format: '%Y-%m-%d',
-										date: '$updatedAt',
-									},
-								},
-								count: { $sum: 1 },
-								totalAmount: { $sum: '$totalAmount' },
-							},
-						},
-						{ $sort: { _id: 1 } },
-					];
-
-					appointmentQuery = [
-						{
-							$match: {
-								ownerId: mongoose.Types.ObjectId(ownerId),
-								status: 'completed',
-								day: {
-									$gte: new Date(startOfYear),
-									$lte: new Date(endOfYear),
-								},
-							},
-						},
-						{
-							$group: {
-								_id: {
-									$dateToString: {
-										format: '%Y-%m-%d',
-										date: '$day',
-									},
-								},
-								count: { $sum: 1 },
-								totalAmount: { $sum: '$price' },
-							},
-						},
-						{ $sort: { _id: 1 } },
-					];
-
-					let salesResult = await Sales.aggregate(salesQuery);
-					let count = 0;
-					let prev;
-					const months = [
-						'January',
-						'February',
-						'March',
-						'April',
-						'May',
-						'June',
-						'July',
-						'August',
-						'September',
-						'October',
-						'November',
-						'December',
-					];
-
-					salesResult.forEach((element) => {
-						let month = new Date(element._id).getMonth();
-
-						if (prev == month || typeof prev == 'undefined') {
-							for (let i = 0; i < 12; i++) {
-								if (typeof prev == undefined || month == i) {
-									salesTotal =
-										salesTotal + element.totalAmount;
-									prev = month;
-								}
-							}
-							count++;
-						} else if (prev < month) {
-							let data = {
-								location: locationName.name,
-								valueKey: months[month - 1],
-								amount: salesTotal,
-							};
-							graphData.push(data);
-							salesTotal = 0;
-							for (let i = 0; i < 12; i++) {
-								if (typeof prev == 'undefined' || month == i) {
-									salesTotal =
-										salesTotal + element.totalAmount;
-									prev = month;
-								}
-							}
-							count++;
-						}
-						if (count == salesResult.length) {
-							let data = {
-								location: locationName.name,
-								valueKey: months[month],
-								amount: salesTotal,
-							};
-
-							graphData.push(data);
-						}
-					});
-				}
-
 				//Weekly view
 				if (data.query.week) {
 					values = getDateRange(startOfWeek, 7);
@@ -352,6 +237,178 @@ exports.getSalesData = async (data) => {
 							graphData.push(data);
 						}
 					}
+				}
+				//Yearly view
+				if (data.query.year) {
+					salesQuery = [
+						{
+							$match: {
+								ownerId: mongoose.Types.ObjectId(ownerId),
+								location: mongoose.Types.ObjectId(location[i]),
+								updatedAt: {
+									$gte: new Date(startOfYear),
+									$lte: new Date(endOfYear),
+								},
+							},
+						},
+						{
+							$group: {
+								_id: {
+									$dateToString: {
+										format: '%Y-%m-%d',
+										date: '$updatedAt',
+									},
+								},
+								count: { $sum: 1 },
+								totalAmount: { $sum: '$totalAmount' },
+							},
+						},
+						{ $sort: { _id: 1 } },
+					];
+
+					appointmentQuery = [
+						{
+							$match: {
+								ownerId: mongoose.Types.ObjectId(ownerId),
+								status: 'completed',
+								day: {
+									$gte: new Date(startOfYear),
+									$lte: new Date(endOfYear),
+								},
+							},
+						},
+						{
+							$group: {
+								_id: {
+									$dateToString: {
+										format: '%Y-%m-%d',
+										date: '$day',
+									},
+								},
+								count: { $sum: 1 },
+								totalAmount: { $sum: '$price' },
+							},
+						},
+						{ $sort: { _id: 1 } },
+					];
+
+					let salesResult = await Sales.aggregate(salesQuery);
+					let count = 0;
+					let prev;
+					let months = [
+						'January',
+						'February',
+						'March',
+						'April',
+						'May',
+						'June',
+						'July',
+						'August',
+						'September',
+						'October',
+						'November',
+						'December',
+					];
+
+					// if (salesResult.length > 0) {
+					// 	months.forEach((allMonth) => {
+					// 		salesResult.forEach((element) => {
+					// 			let month = new Date(element._id).getMonth();
+					// 			if (allMonth == months[month]) {
+					// 				counter = 0;
+					// 			} else {
+					// 				counter++;
+
+					// 				if (counter == salesResult.length) {
+					// 					data = {
+					// 						location: locationName.name,
+					// 						valueKey: allMonth,
+					// 						amount: 0,
+					// 					};
+					// 					graphData.push(data);
+					// 					counter = 0;
+					// 				}
+					// 			}
+					// 		});
+					// 		counter = 0;
+					// 	});
+					// } else {
+					// 	months.forEach((allMonth) => {
+					// 		let data = {
+					// 			location: locationName.name,
+					// 			valueKey: allMonth,
+					// 			amount: 0,
+					// 		};
+					// 		graphData.push(data);
+					// 	});
+					// }
+					months.forEach((allMonth) => {
+						salesResult.forEach((element) => {
+							let month = new Date(element._id).getMonth();
+
+							if (allMonth == months[month]) {
+								if (
+									prev == month ||
+									typeof prev == 'undefined'
+								) {
+									for (let i = 0; i < 12; i++) {
+										if (
+											typeof prev == undefined ||
+											month == i
+										) {
+											salesTotal =
+												salesTotal +
+												element.totalAmount;
+											prev = month;
+										}
+									}
+									count++;
+								} else if (prev < month) {
+									let data = {
+										location: locationName.name,
+										valueKey: months[month - 1],
+										amount: salesTotal,
+									};
+									graphData.push(data);
+									salesTotal = 0;
+									for (let i = 0; i < 12; i++) {
+										if (
+											typeof prev == 'undefined' ||
+											month == i
+										) {
+											salesTotal =
+												salesTotal +
+												element.totalAmount;
+											prev = month;
+										}
+									}
+									count++;
+								}
+								if (count == salesResult.length) {
+									let data = {
+										location: locationName.name,
+										valueKey: allMonth,
+										amount: salesTotal,
+									};
+
+									graphData.push(data);
+								}
+								counter = 0;
+							} else {
+								counter++;
+								if (counter == salesResult.length) {
+									data = {
+										location: locationName.name,
+										valueKey: allMonth,
+										amount: 0,
+									};
+									graphData.push(data);
+									counter = 0;
+								}
+							}
+						});
+						counter = 0;
+					});
 				}
 
 				appointmentQuery[0].$match.location = mongoose.Types.ObjectId(
