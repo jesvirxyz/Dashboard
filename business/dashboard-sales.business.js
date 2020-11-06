@@ -15,22 +15,23 @@ const { msg } = require('../../../../../config/messages'),
 exports.getSalesData = async (data) => {
 	let body = pickDashboardCategories(data.body);
 
-	let location = ['5f5f3e8782303800122d02f7', '5f6ee433e365e80019f5fe8a'];
+	// let location = ['5f5f3e8782303800122d02f7', '5f6ee433e365e80019f5fe8a'];
 	// let location = ['5f5f3e8782303800122d02f7'];
-	let start_date = '2020-10-29T05:30:00.000Z';
-	let end_date = '2020-10-30T05:30:00.000Z';
+	// let start_date = '2020-10-29T05:30:00.000Z';
+	// let end_date = '2020-10-30T05:30:00.000Z';
 
-	// let location = body.locationId;
-	// let start_date = body.start_date;
-	// let end_date = body.end_date;
+	let location = body.locationId;
+	let start_date = body.start_date;
+	let end_date = body.end_date;
 	let ownerId = mongoose.Types.ObjectId(data.owner);
-
-	let startOfYear = moment(start_date).startOf('year');
-	let endOfYear = moment(end_date).endOf('year');
-	let startOfWeek = moment(start_date).startOf('week');
-	let endOfWeek = moment(end_date).endOf('week');
-	let startOfMonth = moment(start_date).startOf('month');
-	let endOfMonth = moment(end_date).endOf('month');
+	let startDate = new Date(start_date);
+	let endDate = new Date(end_date);
+	// let startDate = moment(start_date).startOf('year');
+	// let endDate = moment(end_date).endOf('year');
+	// let startDate = moment(start_date).startOf('week');
+	// let endDate = moment(end_date).endOf('week');
+	// let startDate = moment(start_date).startOf('month');
+	// let endDate = moment(end_date).endOf('month');
 	let values;
 
 	try {
@@ -45,10 +46,7 @@ exports.getSalesData = async (data) => {
 				let locationName = await Location.findById(location[i]);
 				//Monthly view
 				if (data.query.month) {
-					values = getDateRange(
-						startOfMonth,
-						startOfMonth.daysInMonth()
-					);
+					values = getDateRange(startDate, startDate.daysInMonth());
 
 					salesQuery = [
 						{
@@ -56,8 +54,8 @@ exports.getSalesData = async (data) => {
 								ownerId: mongoose.Types.ObjectId(ownerId),
 								location: mongoose.Types.ObjectId(location[i]),
 								updatedAt: {
-									$gte: new Date(startOfMonth),
-									$lte: new Date(endOfMonth),
+									$gte: new Date(startDate),
+									$lte: new Date(endDate),
 								},
 							},
 						},
@@ -81,8 +79,8 @@ exports.getSalesData = async (data) => {
 								ownerId: mongoose.Types.ObjectId(ownerId),
 								status: 'completed',
 								day: {
-									$gte: new Date(startOfMonth),
-									$lte: new Date(endOfMonth),
+									$gte: new Date(startDate),
+									$lte: new Date(endDate),
 								},
 							},
 						},
@@ -100,60 +98,18 @@ exports.getSalesData = async (data) => {
 						},
 						{ $sort: { _id: 1 } },
 					];
-
-					let salesResult = await Sales.aggregate(salesQuery);
-
-					if (salesResult.length > 0) {
-						values.forEach((date) => {
-							let data;
-							salesResult.forEach((element) => {
-								if (date == element._id) {
-									data = {
-										location: locationName.name,
-										valueKey: element._id,
-										amount: element.totalAmount,
-									};
-									salesTotal =
-										salesTotal + element.totalAmount;
-									graphData.push(data);
-									counter = 0;
-								} else {
-									counter++;
-									if (counter == salesResult.length) {
-										data = {
-											location: locationName.name,
-											valueKey: date,
-											amount: 0,
-										};
-										graphData.push(data);
-										counter = 0;
-									}
-								}
-							});
-							counter = 0;
-						});
-					} else {
-						for (let i = 0; i < values.length; i++) {
-							let data = {
-								location: locationName.name,
-								valueKey: values[i],
-								amount: 0,
-							};
-							graphData.push(data);
-						}
-					}
 				}
 				//Weekly view
 				if (data.query.week) {
-					values = getDateRange(startOfWeek, 7);
+					values = getDateRange(startDate, 7);
 					salesQuery = [
 						{
 							$match: {
 								ownerId: mongoose.Types.ObjectId(ownerId),
 								location: mongoose.Types.ObjectId(location[i]),
 								updatedAt: {
-									$gte: new Date(startOfWeek),
-									$lte: new Date(endOfWeek),
+									$gte: new Date(startDate),
+									$lte: new Date(endDate),
 								},
 							},
 						},
@@ -177,8 +133,8 @@ exports.getSalesData = async (data) => {
 								ownerId: mongoose.Types.ObjectId(ownerId),
 								status: 'completed',
 								day: {
-									$gte: new Date(startOfWeek),
-									$lte: new Date(endOfWeek),
+									$gte: new Date(startDate),
+									$lte: new Date(endDate),
 								},
 							},
 						},
@@ -196,47 +152,6 @@ exports.getSalesData = async (data) => {
 						},
 						{ $sort: { _id: 1 } },
 					];
-
-					let salesResult = await Sales.aggregate(salesQuery);
-					if (salesResult.length > 0) {
-						values.forEach((date) => {
-							let data;
-							salesResult.forEach((element) => {
-								if (date == element._id) {
-									data = {
-										location: locationName.name,
-										valueKey: element._id,
-										amount: element.totalAmount,
-									};
-									salesTotal =
-										salesTotal + element.totalAmount;
-									graphData.push(data);
-									counter = 0;
-								} else {
-									counter++;
-									if (counter == salesResult.length) {
-										data = {
-											location: locationName.name,
-											valueKey: date,
-											amount: 0,
-										};
-										graphData.push(data);
-										counter = 0;
-									}
-								}
-							});
-							counter = 0;
-						});
-					} else {
-						for (let i = 0; i < values.length; i++) {
-							let data = {
-								location: locationName.name,
-								valueKey: values[i],
-								amount: 0,
-							};
-							graphData.push(data);
-						}
-					}
 				}
 				//Yearly view
 				if (data.query.year) {
@@ -246,8 +161,8 @@ exports.getSalesData = async (data) => {
 								ownerId: mongoose.Types.ObjectId(ownerId),
 								location: mongoose.Types.ObjectId(location[i]),
 								updatedAt: {
-									$gte: new Date(startOfYear),
-									$lte: new Date(endOfYear),
+									$gte: new Date(startDate),
+									$lte: new Date(endDate),
 								},
 							},
 						},
@@ -272,8 +187,8 @@ exports.getSalesData = async (data) => {
 								ownerId: mongoose.Types.ObjectId(ownerId),
 								status: 'completed',
 								day: {
-									$gte: new Date(startOfYear),
-									$lte: new Date(endOfYear),
+									$gte: new Date(startDate),
+									$lte: new Date(endDate),
 								},
 							},
 						},
@@ -389,6 +304,51 @@ exports.getSalesData = async (data) => {
 					}
 				}
 
+				let salesResult = await Sales.aggregate(salesQuery);
+
+				//Logic for month and week
+				if (data.query.week || data.query.month) {
+					if (salesResult.length > 0) {
+						values.forEach((date) => {
+							let data;
+							salesResult.forEach((element) => {
+								if (date == element._id) {
+									data = {
+										location: locationName.name,
+										valueKey: element._id,
+										amount: element.totalAmount,
+									};
+									salesTotal =
+										salesTotal + element.totalAmount;
+									graphData.push(data);
+									counter = 0;
+								} else {
+									counter++;
+									if (counter == salesResult.length) {
+										data = {
+											location: locationName.name,
+											valueKey: date,
+											amount: 0,
+										};
+										graphData.push(data);
+										counter = 0;
+									}
+								}
+							});
+							counter = 0;
+						});
+					} else {
+						for (let i = 0; i < values.length; i++) {
+							let data = {
+								location: locationName.name,
+								valueKey: values[i],
+								amount: 0,
+							};
+							graphData.push(data);
+						}
+					}
+				}
+
 				appointmentQuery[0].$match.location = mongoose.Types.ObjectId(
 					location[i]
 				);
@@ -419,8 +379,8 @@ exports.getSalesData = async (data) => {
 	}
 };
 
-function getDateRange(startOfWeek, range) {
-	let start = new Date(startOfWeek);
+function getDateRange(date, range) {
+	let start = new Date(date);
 	let arr = [];
 	for (let i = 0; i < range; i++) {
 		let data = new Date(moment(start.setDate(start.getDate() + 1)));
