@@ -428,4 +428,3 @@ function getDateRange(startOfWeek, range) {
 	}
 	return arr;
 }
-
